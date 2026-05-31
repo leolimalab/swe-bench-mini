@@ -1,50 +1,97 @@
 [
   {
-    "id": "refac-001",
-    "name": "Procedural to List Comprehension",
+    "id": "refac-101",
+    "name": "Regex to Compiled",
     "category": "refactoring",
     "difficulty": "easy",
-    "description": "Refactor procedural code to use list comprehensions",
-    "instruction": "Refactor this function to use modern Python features (list comprehensions, built-in functions). Keep the same behavior and output.",
-    "code_context": "def process_numbers(nums):\n    result = []\n    for n in nums:\n        if n > 0:\n            result.append(n * 2)\n    return result",
-    "test_code": "assert process_numbers([1, -2, 3, -4, 5]) == [2, 6, 10]\nassert process_numbers([]) == []\nassert process_numbers([-1, -2]) == []",
-    "timeout": 5,
-    "constraints": "Use at least one list comprehension."
+    "description": "Refatore regex bruta para usar re.compile()",
+    "instruction": "Refatore o código para usar re.compile() para pré-compilar a regex, melhorando performance em chamadas repetidas.",
+    "code_context": "def extract_emails(text):\n    import re\n    return re.findall(r'[\\w.+-]+@[\\w-]+\\.[\\w.]+', text)",
+    "fail_to_pass": [
+      "assert 'user@example.com' in extract_emails('Contact: user@example.com')",
+      "assert extract_emails('no email') == []"
+    ],
+    "pass_to_pass": [
+      "assert len(extract_emails('a@b.com c@d.com')) == 2",
+      "assert extract_emails('') == []"
+    ],
+    "timeout": 5
   },
   {
-    "id": "refac-002",
-    "name": "Grade Calculator Refactor",
+    "id": "refac-102",
+    "name": "Nested If to Match",
     "category": "refactoring",
     "difficulty": "medium",
-    "description": "Refactor a messy grade calculator into clean Python",
-    "instruction": "Refactor this working but messy code into clean, Pythonic style. Use type hints, dataclasses, or other modern features. Keep the same output format.",
-    "code_context": "def process_grades(data):\n    results = {}\n    for i in range(len(data)):\n        item = data[i]\n        name = item['name']\n        scores = item['scores']\n        total = 0\n        count = 0\n        for j in range(len(scores)):\n            if scores[j] >= 0:\n                total = total + scores[j]\n                count = count + 1\n        if count > 0:\n            avg = total / count\n        else:\n            avg = 0\n        if avg >= 90:\n            grade = 'A'\n        elif avg >= 80:\n            grade = 'B'\n        elif avg >= 70:\n            grade = 'C'\n        elif avg >= 60:\n            grade = 'D'\n        else:\n            grade = 'F'\n        results[name] = {'avg': avg, 'grade': grade}\n    return results",
-    "test_code": "data = [{'name': 'Alice', 'scores': [95, 85, 90]}, {'name': 'Bob', 'scores': [70, 65, 75]}]\nresult = process_grades(data)\nassert result['Alice']['grade'] == 'A'\nassert result['Bob']['grade'] == 'C'\nassert abs(result['Alice']['avg'] - 90.0) < 0.01",
-    "timeout": 5,
-    "constraints": null
-  },
-  {
-    "id": "refac-003",
-    "name": "Nested If to Match-Case",
-    "category": "refactoring",
-    "difficulty": "medium",
-    "description": "Refactor nested if-else to use match-case (Python 3.10+)",
-    "instruction": "Refactor this function to use Python's match-case (structural pattern matching) instead of nested if-else. Keep the same behavior.",
+    "description": "Refatore if-else aninhado para match-case (Python 3.10+)",
+    "instruction": "Refatore esta função para usar match-case (structural pattern matching) do Python 3.10+. Mantenha o mesmo comportamento.",
     "code_context": "def http_status(code):\n    if code == 200:\n        return 'OK'\n    elif code == 201:\n        return 'Created'\n    elif code == 204:\n        return 'No Content'\n    elif code == 301:\n        return 'Moved Permanently'\n    elif code == 400:\n        return 'Bad Request'\n    elif code == 401:\n        return 'Unauthorized'\n    elif code == 403:\n        return 'Forbidden'\n    elif code == 404:\n        return 'Not Found'\n    elif code == 500:\n        return 'Internal Server Error'\n    elif code == 502:\n        return 'Bad Gateway'\n    else:\n        return 'Unknown'",
-    "test_code": "assert http_status(200) == 'OK'\nassert http_status(404) == 'Not Found'\nassert http_status(500) == 'Internal Server Error'\nassert http_status(999) == 'Unknown'",
-    "timeout": 5,
-    "constraints": "Use match-case (Python 3.10+ syntax)."
+    "fail_to_pass": [
+      "assert http_status(200) == 'OK'",
+      "assert http_status(404) == 'Not Found'",
+      "assert http_status(500) == 'Internal Server Error'"
+    ],
+    "pass_to_pass": [
+      "assert http_status(999) == 'Unknown'",
+      "assert http_status(0) == 'Unknown'",
+      "assert http_status(502) == 'Bad Gateway'"
+    ],
+    "timeout": 5
   },
   {
-    "id": "refac-004",
+    "id": "refac-103",
     "name": "Monolithic to Modular",
     "category": "refactoring",
     "difficulty": "hard",
-    "description": "Break a monolithic function into smaller, focused functions",
-    "instruction": "Refactor this monolithic function into smaller, well-named helper functions. The main function should still work the same way, but the logic should be broken down into clear, focused pieces. Add type hints and a docstring.",
+    "description": "Quebre função monolítica em funções menores e focadas",
+    "instruction": "Refatore esta função monolítica em pelo menos 3 funções auxiliares bem nomeadas. Adicione type hints e docstrings.",
     "code_context": "def analyze_text(text):\n    words = text.split()\n    word_count = len(words)\n    char_count = len(text)\n    longest = ''\n    for w in words:\n        if len(w) > len(longest):\n            longest = w\n    freqs = {}\n    for w in words:\n        w = w.lower().strip('.,!?;:')\n        if w:\n            freqs[w] = freqs.get(w, 0) + 1\n    most_common = ''\n    max_count = 0\n    for word, count in freqs.items():\n        if count > max_count:\n            most_common = word\n            max_count = count\n    return {'words': word_count, 'chars': char_count, 'longest': longest, 'freq': most_common}",
-    "test_code": "result = analyze_text('Hello world hello')\nassert result['words'] == 3\nassert result['chars'] == 17\nassert result['longest'] == 'world'\nassert result['freq'] == 'hello'",
+    "fail_to_pass": [
+      "result = analyze_text('Hello world hello'); assert result['words'] == 3",
+      "result = analyze_text('Hello world hello'); assert result['freq'] == 'hello'"
+    ],
+    "pass_to_pass": [
+      "result = analyze_text('Hello world hello'); assert result['chars'] == 17",
+      "result = analyze_text(''); assert result['words'] == 0",
+      "result = analyze_text('a'); assert result['longest'] == 'a'"
+    ],
     "timeout": 5,
-    "constraints": "Must have at least 3 helper functions."
+    "hints": "Separe em: count_words(), find_longest(), most_frequent_word(). Depois use type hints (def analyze_text(text: str) -> dict) e docstrings."
+  },
+  {
+    "id": "refac-104",
+    "name": "List Comprehension",
+    "category": "refactoring",
+    "difficulty": "easy",
+    "description": "Refatore loop procedural para list comprehension",
+    "instruction": "Refatore para usar list comprehension em vez do loop for explícito.",
+    "code_context": "def process_numbers(nums):\n    result = []\n    for n in nums:\n        if n > 0:\n            result.append(n * 2)\n    return result",
+    "fail_to_pass": [
+      "assert process_numbers([1, -2, 3, -4, 5]) == [2, 6, 10]"
+    ],
+    "pass_to_pass": [
+      "assert process_numbers([]) == []",
+      "assert process_numbers([-1, -2]) == []",
+      "assert process_numbers([0, 1, 2]) == [2, 4]"
+    ],
+    "timeout": 5
+  },
+  {
+    "id": "refac-105",
+    "name": "Grade Calculator",
+    "category": "refactoring",
+    "difficulty": "medium",
+    "description": "Refatore código procedural para Python moderno com dataclasses",
+    "instruction": "Refatore este código para usar dataclasses, type hints e funções auxiliares. Mantenha a mesma saída.",
+    "code_context": "def process_grades(data):\n    results = {}\n    for i in range(len(data)):\n        item = data[i]\n        name = item['name']\n        scores = item['scores']\n        total = 0\n        count = 0\n        for j in range(len(scores)):\n            if scores[j] >= 0:\n                total = total + scores[j]\n                count = count + 1\n        if count > 0:\n            avg = total / count\n        else:\n            avg = 0\n        if avg >= 90:\n            grade = 'A'\n        elif avg >= 80:\n            grade = 'B'\n        elif avg >= 70:\n            grade = 'C'\n        elif avg >= 60:\n            grade = 'D'\n        else:\n            grade = 'F'\n        results[name] = {'avg': avg, 'grade': grade}\n    return results",
+    "fail_to_pass": [
+      "data = [{'name': 'Alice', 'scores': [95, 85, 90]}]; r = process_grades(data); assert r['Alice']['grade'] == 'A'",
+      "data = [{'name': 'Bob', 'scores': [70, 65, 75]}]; r = process_grades(data); assert r['Bob']['grade'] == 'C'"
+    ],
+    "pass_to_pass": [
+      "assert process_grades([]) == {}",
+      "data = [{'name': 'Fail', 'scores': [30, 40]}]; assert process_grades(data)['Fail']['grade'] == 'F'",
+      "data = [{'name': 'Edge', 'scores': [90]}]; assert process_grades(data)['Edge']['grade'] == 'A'"
+    ],
+    "timeout": 5
   }
 ]

@@ -1,13 +1,20 @@
 """
-Evaluator — Extracts code from model responses, executes tests, computes score.
+Evaluator v2 — F2P/P2P evaluation pipeline.
+
+Inspired by SWE-bench (Princeton NLP):
+- fail_to_pass (F2P): tests that should pass on fixed code (bug resolution)
+- pass_to_pass (P2P): tests that should still pass (no regression)
+- Resolution status: FULL / PARTIAL / NO / REGRESSION
+- Failure categories with precedence order
 """
 
 import ast
-import tempfile
+import json
+import os
 import subprocess
 import sys
+import tempfile
 import time
-import os
 import re
 
 
@@ -17,103 +24,160 @@ CODE_BLOCK_RE = re.compile(
 
 
 class Evaluator:
-    """Evaluates model code output and computes a composite score (0-100)."""
-
-    # Score weights
-    W_SYNTAX = 20
-    W_TESTS = 50
-    W_TIME = 15
-    W_QUALITY = 15
-
-    # Quality checks
-    HAS_DOCSTRING_RE = re.compile(r'""".*?"""', re.DOTALL)
-    HAS_TYPE_HINTS_RE = re.compile(r":\s*\w+")
-    HAS_DEF_RE = re.compile(r"def\s+\w+\s*\(")
+    """Evaluates model code output using F2P/P2P methodology."""
 
     def evaluate(self, task, response_text):
-        """Full evaluation pipeline: extract → syntax → tests → quality → score."""
+        """Full F2P/P2P evaluation pipeline.
+
+        Returns:
+            dict with keys: code, syntax_ok, syntax_error,
+            f2p_passed, f2p_total, p2p_passed, p2p_total,
+            f2p_ratio, p2p_ratio, total_score,
+            resolution, failure_category, exec_time, error
+        """
+        result = {
+            "code": "",
+            "syntax_ok": False,
+            "syntax_error": None,
+            "f2p_passed": 0,
+            "f2p_total": 0,
+            "p2p_passed": 0,
+            "p2p_total": 0,
+            "f2p_ratio": 0.0,
+            "p2p_ratio": 0.0,
+            "total_score": 0,
+            "resolution": "NO",
+            "failure_category": None,
+            "exec_time": 0.0,
+            "error": None,
+            "hints_used": bool(task.get("hints")),
+        }
+
+        # 1) Extract code
         code = self._extract_code(response_text)
         if not code:
-            return {
-                "code": "",
-                "syntax_ok": False,
-                "tests_passed": 0,
-                "tests_total": 0,
-                "exec_time": 0,
-                "has_docstring": False,
-                "has_type_hints": False,
-                "syntax_score": 0,
-                "tests_score": 0,
-                "time_score": 0,
-                "quality_score": 0,
-                "total_score": 0,
-                "error": "No code block found in response",
-            }
+            result["failure_category"] = "no_code"
+            result["error"] = "No code block found in response"
+            return result
+        result["code"] = code
 
-        # 1) Syntax check (20 pts)
+        # 2) Syntax check
         syntax_ok, syntax_error = self._check_syntax(code)
-        syntax_score = self.W_SYNTAX if syntax_ok else 0
+        result["syntax_ok"] = syntax_ok
+        result["syntax_error"] = syntax_error
+        if not syntax_ok:
+            result["failure_category"] = "syntax"
+            result["error"] = syntax_error
+            return result
 
-        # 2) Test execution (50 pts)
-        test_code = task.get("test_code", "")
-        tests_passed = 0
-        tests_total = 0
-        exec_time = 0
-        tests_score = 0
-        runtime_error = None
+        # 3) Detect mode: generation vs bug_fixing
+        f2p_asserts = task.get("fail_to_pass", [])
+        p2p_asserts = task.get("pass_to_pass", [])
+        is_generation_mode = (f2p_asserts == p2p_asserts)
+        timeout = task.get("timeout", 5)
 
-        if syntax_ok and test_code:
-            tests_passed, tests_total, exec_time, runtime_error = self._run_tests(
-                code, test_code, task.get("timeout", 5)
-            )
-            tests_score = (
-                int(self.W_TESTS * tests_passed / tests_total)
-                if tests_total > 0
-                else 0
-            )
-        elif syntax_ok and not test_code:
-            tests_score = self.W_TESTS  # auto-pass if no tests
+        # 4) Run F2P tests
+        f2p_passed, f2p_total, f2p_time, f2p_error = self._run_test_list(
+            f2p_asserts, code, timeout
+        )
+        result["f2p_passed"] = f2p_passed
+        result["f2p_total"] = f2p_total
+        result["exec_time"] = round(f2p_time, 3)
 
-        # 3) Time score (15 pts)
-        if syntax_ok:
-            threshold = task.get("timeout", 5)
-            if exec_time <= threshold:
-                time_score = self.W_TIME
-            elif exec_time <= threshold * 2:
-                time_score = int(self.W_TIME * (1 - (exec_time - threshold) / threshold))
-            else:
-                time_score = 0
+        if f2p_error and f2p_error != "timeout":
+            result["runtime_error"] = f2p_error
+
+        if f2p_total > 0:
+            result["f2p_ratio"] = round(f2p_passed / f2p_total, 4)
         else:
-            time_score = 0
+            result["f2p_ratio"] = 1.0
 
-        # 4) Quality score (15 pts)
-        quality_score = self._quality_score(code) if syntax_ok else 0
+        # 5) Run P2P tests (only in bug_fixing mode)
+        p2p_passed = 0
+        p2p_total = 0
+        p2p_error = None
+        if not is_generation_mode and p2p_asserts:
+            p2p_passed, p2p_total, p2p_time, p2p_error = self._run_test_list(
+                p2p_asserts, code, timeout
+            )
+            result["p2p_passed"] = p2p_passed
+            result["p2p_total"] = p2p_total
+            result["exec_time"] = round(
+                max(result["exec_time"], p2p_time), 3
+            )
+            if p2p_total > 0:
+                result["p2p_ratio"] = round(p2p_passed / p2p_total, 4)
+            else:
+                result["p2p_ratio"] = 1.0
+        elif is_generation_mode:
+            # In generation mode, P2P = F2P (identical arrays)
+            result["p2p_passed"] = f2p_passed
+            result["p2p_total"] = f2p_total
+            result["p2p_ratio"] = result["f2p_ratio"]
 
-        total_score = syntax_score + tests_score + time_score + quality_score
+        # 6) Check for timeout
+        if f2p_error == "timeout" or p2p_error == "timeout":
+            result["failure_category"] = "timeout"
+            result["error"] = "Execution timed out"
+            return result
 
-        return {
-            "code": code,
-            "syntax_ok": syntax_ok,
-            "syntax_error": syntax_error,
-            "tests_passed": tests_passed,
-            "tests_total": tests_total,
-            "exec_time": round(exec_time, 3),
-            "runtime_error": runtime_error,
-            "has_docstring": bool(self.HAS_DOCSTRING_RE.search(code)),
-            "has_type_hints": bool(self.HAS_TYPE_HINTS_RE.search(code)),
-            "syntax_score": syntax_score,
-            "tests_score": tests_score,
-            "time_score": time_score,
-            "quality_score": quality_score,
-            "total_score": total_score,
-            "error": None,
-        }
+        # 7) Check for runtime error (non-AssertionError)
+        runtime_err = f2p_error or p2p_error
+        if runtime_err:
+            result["failure_category"] = "runtime"
+            result["error"] = runtime_err
+            return result
+
+        # 8) Classify failure (precedence order)
+        f2p_all_pass = result["f2p_passed"] == result["f2p_total"]
+        p2p_all_pass = result["p2p_passed"] == result["p2p_total"]
+
+        if is_generation_mode:
+            # Generation: no regression concept
+            if f2p_all_pass:
+                result["resolution"] = "FULL"
+                result["total_score"] = 100
+            else:
+                result["resolution"] = "NO"
+                result["failure_category"] = "unresolved"
+                result["total_score"] = int(result["f2p_ratio"] * 60)
+                result["error"] = "Code does not pass all tests"
+        else:
+            # Bug fixing mode: full F2P/P2P logic
+            if not p2p_all_pass:
+                # Regression has higher precedence than unresolved
+                result["failure_category"] = "regression"
+                result["resolution"] = "REGRESSION"
+                result["total_score"] = int(
+                    result["f2p_ratio"] * 60 + result["p2p_ratio"] * 40
+                )
+                result["error"] = "Created regression(s) — existing tests broke"
+            elif not f2p_all_pass:
+                if result["f2p_passed"] > 0:
+                    result["resolution"] = "PARTIAL"
+                    result["failure_category"] = "unresolved"
+                else:
+                    result["resolution"] = "NO"
+                    result["failure_category"] = "unresolved"
+                result["total_score"] = int(
+                    result["f2p_ratio"] * 60 + result["p2p_ratio"] * 40
+                )
+                result["error"] = "Bug not fully resolved"
+            else:
+                result["resolution"] = "FULL"
+                result["total_score"] = 100
+
+        return result
 
     def _extract_code(self, text):
         """Extract Python code from ```python ... ``` blocks."""
+        if not text:
+            return None
         blocks = CODE_BLOCK_RE.findall(text)
         if not blocks:
-            # Try extracting any code-like block
+            # Try extracting any code-like block (``` without language)
+            blocks = re.findall(r"```\s*\n(.*?)```", text, re.DOTALL)
+        if not blocks:
             return None
         return "\n".join(b.strip() for b in blocks)
 
@@ -125,22 +189,50 @@ class Evaluator:
         except SyntaxError as e:
             return False, str(e)
 
-    def _run_tests(self, code, test_code, timeout):
-        """Write code + tests to temp file and execute with subprocess."""
-        full_code = code + "\n\n" + test_code
+    def _run_test_list(self, asserts, code, timeout):
+        """Run a list of assert statements with individual try/except wrapping.
 
-        # Count test lines (each assert is a test)
-        test_lines = [l.strip() for l in test_code.split("\n") if l.strip().startswith("assert")]
-        total = len(test_lines) if test_lines else 1
+        Each assert is wrapped so ALL execute even if some fail.
+        Results are returned via JSON on stdout.
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False, dir=os.path.expanduser("~")
-        ) as f:
-            f.write(full_code)
-            tmp_path = f.name
+        Returns:
+            (passed_count, total_count, exec_time, error_string_or_None)
+        """
+        if not asserts:
+            return 0, 0, 0, None
 
-        t0 = time.time()
+        total = len(asserts)
+
+        # Build wrapper: code + try/except for each assert
+        wrapper_lines = [code, ""]
+        wrapper_lines.append("_results = {}")
+        for i, assert_code in enumerate(asserts):
+            wrapper_lines.append(f"""
+try:
+    {assert_code}
+    _results[{i}] = 'PASS'
+except AssertionError:
+    _results[{i}] = 'FAIL'
+except Exception as e:
+    _results[{i}] = 'ERR:' + str(e)
+""")
+        wrapper_lines.append("")
+        wrapper_lines.append("import json")
+        wrapper_lines.append("print('__RESULTS__')")
+        wrapper_lines.append("print(json.dumps(_results))")
+        full_code = "\n".join(wrapper_lines)
+
+        # Write to temp file
+        tmp_path = None
         try:
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".py", delete=False,
+                dir=os.path.expanduser("~")
+            ) as f:
+                f.write(full_code)
+                tmp_path = f.name
+
+            t0 = time.time()
             result = subprocess.run(
                 [sys.executable, tmp_path],
                 capture_output=True,
@@ -149,52 +241,64 @@ class Evaluator:
             )
             exec_time = time.time() - t0
 
-            if result.returncode == 0:
-                passed = total
-            else:
-                # Count how many asserts passed vs failed
-                stderr = result.stderr
-                passed = 0
-                for line in test_lines:
-                    if line not in stderr:
-                        passed += 1
+            # Parse JSON results from stdout
+            results = {}
+            capture = False
+            for line in result.stdout.splitlines():
+                if line.strip() == "__RESULTS__":
+                    capture = True
+                    continue
+                if capture:
+                    try:
+                        results = json.loads(line)
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+                    break
+
+            if not results:
+                # Fallback: parse stderr for errors
+                stderr = result.stderr.strip()
+                if stderr:
+                    return 0, total, exec_time, stderr[:500]
+                return 0, total, exec_time, "Could not parse test results"
+
+            passed = 0
+            runtime_error = None
+            for i in range(total):
+                status = results.get(str(i), "FAIL")
+                if status == "PASS":
+                    passed += 1
+                elif status.startswith("ERR:"):
+                    if runtime_error is None:
+                        runtime_error = status[4:]  # Remove 'ERR:' prefix
 
             os.unlink(tmp_path)
-            return passed, total, exec_time, None if result.returncode == 0 else result.stderr
+            return passed, total, exec_time, runtime_error
 
         except subprocess.TimeoutExpired:
-            os.unlink(tmp_path)
+            if tmp_path and os.path.exists(tmp_path):
+                os.unlink(tmp_path)
             return 0, total, timeout, "timeout"
         except Exception as e:
-            try:
-                os.unlink(tmp_path)
-            except Exception:
-                pass
-            return 0, total, time.time() - t0, str(e)
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass
+            return 0, total, time.time() - t0 if 't0' in dir() else 0, str(e)
 
-    def _quality_score(self, code):
-        """Assess code quality: docstrings, type hints, function definitions."""
-        score = 0
-        checks = 0
+    def compute_score(self, f2p_ratio, p2p_ratio):
+        """Compute composite score from F2P and P2P ratios."""
+        return int(f2p_ratio * 60 + p2p_ratio * 40)
 
-        # Has at least one function/class
-        if self.HAS_DEF_RE.search(code):
-            score += 5
-        checks += 5
+    @staticmethod
+    def get_resolution_status(f2p_ratio, p2p_ratio, is_generation=False):
+        """Determine resolution status from ratios."""
+        if is_generation:
+            return "FULL" if f2p_ratio >= 1.0 else "NO"
 
-        # Has docstring
-        if self.HAS_DOCSTRING_RE.search(code):
-            score += 5
-        checks += 5
-
-        # Has type hints
-        if self.HAS_TYPE_HINTS_RE.search(code):
-            score += 3
-        checks += 3
-
-        # Not too many lines per function (simplicity heuristic)
-        lines = code.split("\n")
-        score += 2 if len(lines) < 100 else 0
-        checks += 2
-
-        return int(self.W_QUALITY * score / checks) if checks > 0 else 0
+        if f2p_ratio >= 1.0 and p2p_ratio >= 1.0:
+            return "FULL"
+        if p2p_ratio >= 1.0:
+            return "PARTIAL" if f2p_ratio > 0 else "NO"
+        return "REGRESSION"

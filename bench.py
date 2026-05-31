@@ -2,7 +2,7 @@
 """
 swe-bench-mini — Lightweight local AI code benchmark.
 Benchmarks local LLMs (via llama.cpp) on code generation, bug fixing,
-and refactoring tasks.
+and refactoring tasks using F2P/P2P evaluation methodology.
 
 Usage:
     python bench.py                          # Run all models, all tasks
@@ -59,6 +59,51 @@ def check_model(model_cfg):
         return False
 
 
+def format_resolution(result):
+    """Format resolution status with emoji for display."""
+    res = result.get("resolution", "NO")
+    cat = result.get("failure_category", "")
+    score = result.get("total_score", 0)
+
+    if res == "FULL":
+        return f"✅ FULL {score}/100"
+    elif res == "PARTIAL":
+        return f"⚠️ PARTIAL {score}/100"
+    elif res == "REGRESSION":
+        return f"🔴 REGRESSION {score}/100"
+    elif res == "NO":
+        return f"❌ NO {score}/100"
+    return f"{res} {score}/100"
+
+
+def format_short(result):
+    """Short one-line format for per-task display."""
+    res = result.get("resolution", "NO")
+    cat = result.get("failure_category", "")
+    f2p = f"{result.get('f2p_passed', 0)}/{result.get('f2p_total', 0)}"
+    p2p = f"{result.get('p2p_passed', 0)}/{result.get('p2p_total', 0)}"
+    score = result.get("total_score", 0)
+
+    if res == "FULL":
+        emoji = "✅"
+    elif res == "PARTIAL":
+        emoji = "⚠️"
+    elif res == "REGRESSION":
+        emoji = "🔴"
+    else:
+        emoji = "❌"
+
+    parts = [f"{emoji} {res} {score}/100"]
+    if result.get("f2p_total", 0) > 0:
+        parts.append(f"F2P:{f2p}")
+    if result.get("p2p_total", 0) > 0:
+        parts.append(f"P2P:{p2p}")
+    if cat:
+        parts.append(f"({cat})")
+    parts.append(f"| {result.get('response_time', 0):.1f}s")
+    return " ".join(parts)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="swe-bench-mini — Benchmark local LLMs on code tasks"
@@ -95,7 +140,11 @@ def main():
             print(f"\n  📁 {cat.replace('_', ' ').title()} ({len(cat_tasks)})")
             for t in cat_tasks:
                 diff_emoji = {"easy": "🟢", "medium": "🟡", "hard": "🔴"}
-                print(f"    {diff_emoji.get(t['difficulty'], '⚪')} {t['id']}: {t['name']}")
+                f2p = len(t.get("fail_to_pass", []))
+                p2p = len(t.get("pass_to_pass", []))
+                hints = " 💡" if t.get("hints") else ""
+                print(f"    {diff_emoji.get(t['difficulty'], '⚪')} {t['id']}: {t['name']}"
+                      f" (F2P:{f2p} P2P:{p2p}){hints}")
         return
 
     # --- Filter models ---
@@ -112,7 +161,7 @@ def main():
 
     # --- Run benchmark ---
     print(f"\n{'='*60}")
-    print(f"  🧪 SWE-BENCH-MINI")
+    print(f"  🧪 SWE-BENCH-MINI v2")
     print(f"  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"{'='*60}")
     print(f"  Models: {', '.join(m['name'] for m in models)}")
@@ -138,7 +187,7 @@ def main():
             if not cat_tasks:
                 continue
 
-            print(f"\n  📝 {cat.replace('_', ' ').title()} ({len(cat_tasks)})")
+            print(f"\n  📝 {cat.replace('_', ' ').title()} ({len(cat_tasks)} tasks)")
 
             for task in cat_tasks:
                 label = f"{task['id']}: {task['name']}"
@@ -171,23 +220,16 @@ def main():
                 }
                 all_results.append(result)
 
-                # Show score
-                total = result["total_score"]
-                if total >= 80:
-                    emoji = "✅"
-                elif total >= 40:
-                    emoji = "⚠️"
-                else:
-                    emoji = "❌"
-
-                detail = f"{emoji} {total}/100"
-                if result.get("tests_total", 0) > 0:
-                    detail += f" | tests: {result['tests_passed']}/{result['tests_total']}"
-                detail += f" | {result['response_time']}s"
-                print(detail)
+                # Show result
+                print(format_short(result))
 
                 if args.verbose:
-                    print(f"       Code:\n{result.get('code', '(none)')[:500]}")
+                    code = result.get("code", "")
+                    if code:
+                        print(f"       Code ({len(code)} chars):\n{code[:300]}")
+                    hints = task.get("hints")
+                    if hints:
+                        print(f"       💡 Dica: {hints}")
 
     # --- Generate report ---
     if all_results:
