@@ -1,0 +1,74 @@
+[
+  {
+    "id": "gen-001",
+    "name": "Fibonacci",
+    "category": "generation",
+    "difficulty": "easy",
+    "description": "Write a function that returns the n-th Fibonacci number",
+    "instruction": "Write a Python function fibonacci(n) that returns the n-th Fibonacci number. fibonacci(0) should return 0, fibonacci(1) should return 1.",
+    "code_context": null,
+    "test_code": "assert fibonacci(0) == 0\nassert fibonacci(1) == 1\nassert fibonacci(10) == 55\nassert fibonacci(20) == 6765",
+    "timeout": 5,
+    "constraints": "Do not use libraries. Use recursion or iteration."
+  },
+  {
+    "id": "gen-002",
+    "name": "Palindrome Check",
+    "category": "generation",
+    "difficulty": "easy",
+    "description": "Check if a string is a palindrome",
+    "instruction": "Write a Python function is_palindrome(s) that returns True if the string s is a palindrome (reads the same forwards and backwards), ignoring case, spaces, and punctuation.",
+    "code_context": null,
+    "test_code": "assert is_palindrome('A man a plan a canal Panama') == True\nassert is_palindrome('racecar') == True\nassert is_palindrome('hello') == False\nassert is_palindrome('') == True",
+    "timeout": 5,
+    "constraints": null
+  },
+  {
+    "id": "gen-003",
+    "name": "Binary Search",
+    "category": "generation",
+    "difficulty": "medium",
+    "description": "Implement binary search on a sorted array",
+    "instruction": "Write a Python function binary_search(arr, target) that returns the index of target in a sorted array arr, or -1 if not found. Must run in O(log n) time.",
+    "code_context": null,
+    "test_code": "assert binary_search([1, 3, 5, 7, 9], 5) == 2\nassert binary_search([1, 3, 5, 7, 9], 1) == 0\nassert binary_search([1, 3, 5, 7, 9], 10) == -1\nassert binary_search([], 5) == -1",
+    "timeout": 5,
+    "constraints": null
+  },
+  {
+    "id": "gen-004",
+    "name": "Valid Parentheses",
+    "category": "generation",
+    "difficulty": "medium",
+    "description": "Check if parentheses string is balanced",
+    "instruction": "Write a Python function is_valid_parentheses(s) that checks if a string containing just the characters '(', ')', '{', '}', '[' and ']' is valid. A string is valid if brackets close in the correct order and all are properly closed.",
+    "code_context": null,
+    "test_code": "assert is_valid_parentheses('()') == True\nassert is_valid_parentheses('()[]{}') == True\nassert is_valid_parentheses('(]') == False\nassert is_valid_parentheses('([)]') == False\nassert is_valid_parentheses('{[]}') == True",
+    "timeout": 5,
+    "constraints": null
+  },
+  {
+    "id": "gen-005",
+    "name": "Two Sum",
+    "category": "generation",
+    "difficulty": "easy",
+    "description": "Find two numbers that add up to target",
+    "instruction": "Write a Python function two_sum(nums, target) that returns the indices of two numbers in the array nums that add up to target. You may assume each input has exactly one solution, and you may not use the same element twice.",
+    "code_context": null,
+    "test_code": "assert two_sum([2, 7, 11, 15], 9) == [0, 1]\nassert two_sum([3, 2, 4], 6) == [1, 2]\nassert two_sum([3, 3], 6) == [0, 1]",
+    "timeout": 5,
+    "constraints": "Use O(n) time complexity."
+  },
+  {
+    "id": "gen-006",
+    "name": "CSV Parser",
+    "category": "generation",
+    "difficulty": "medium",
+    "description": "Parse a CSV string into a list of dictionaries",
+    "instruction": "Write a Python function parse_csv(csv_string) that parses a CSV string and returns a list of dictionaries. The first row is the header. Values may be quoted (with double quotes). Do not use the csv module.",
+    "code_context": null,
+    "test_code": "data = 'name,age\\nAlice,30\\nBob,25'\nresult = parse_csv(data)\nassert result == [{'name': 'Alice', 'age': '30'}, {'name': 'Bob', 'age': '25'}]\ndata2 = 'a,b\\n1,2\\n3,4'\nassert parse_csv(data2) == [{'a': '1', 'b': '2'}, {'a': '3', 'b': '4'}]",
+    "timeout": 5,
+    "constraints": "Do not import csv module."
+  }
+]

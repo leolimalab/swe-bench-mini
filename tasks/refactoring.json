@@ -1,0 +1,50 @@
+[
+  {
+    "id": "refac-001",
+    "name": "Procedural to List Comprehension",
+    "category": "refactoring",
+    "difficulty": "easy",
+    "description": "Refactor procedural code to use list comprehensions",
+    "instruction": "Refactor this function to use modern Python features (list comprehensions, built-in functions). Keep the same behavior and output.",
+    "code_context": "def process_numbers(nums):\n    result = []\n    for n in nums:\n        if n > 0:\n            result.append(n * 2)\n    return result",
+    "test_code": "assert process_numbers([1, -2, 3, -4, 5]) == [2, 6, 10]\nassert process_numbers([]) == []\nassert process_numbers([-1, -2]) == []",
+    "timeout": 5,
+    "constraints": "Use at least one list comprehension."
+  },
+  {
+    "id": "refac-002",
+    "name": "Grade Calculator Refactor",
+    "category": "refactoring",
+    "difficulty": "medium",
+    "description": "Refactor a messy grade calculator into clean Python",
+    "instruction": "Refactor this working but messy code into clean, Pythonic style. Use type hints, dataclasses, or other modern features. Keep the same output format.",
+    "code_context": "def process_grades(data):\n    results = {}\n    for i in range(len(data)):\n        item = data[i]\n        name = item['name']\n        scores = item['scores']\n        total = 0\n        count = 0\n        for j in range(len(scores)):\n            if scores[j] >= 0:\n                total = total + scores[j]\n                count = count + 1\n        if count > 0:\n            avg = total / count\n        else:\n            avg = 0\n        if avg >= 90:\n            grade = 'A'\n        elif avg >= 80:\n            grade = 'B'\n        elif avg >= 70:\n            grade = 'C'\n        elif avg >= 60:\n            grade = 'D'\n        else:\n            grade = 'F'\n        results[name] = {'avg': avg, 'grade': grade}\n    return results",
+    "test_code": "data = [{'name': 'Alice', 'scores': [95, 85, 90]}, {'name': 'Bob', 'scores': [70, 65, 75]}]\nresult = process_grades(data)\nassert result['Alice']['grade'] == 'A'\nassert result['Bob']['grade'] == 'C'\nassert abs(result['Alice']['avg'] - 90.0) < 0.01",
+    "timeout": 5,
+    "constraints": null
+  },
+  {
+    "id": "refac-003",
+    "name": "Nested If to Match-Case",
+    "category": "refactoring",
+    "difficulty": "medium",
+    "description": "Refactor nested if-else to use match-case (Python 3.10+)",
+    "instruction": "Refactor this function to use Python's match-case (structural pattern matching) instead of nested if-else. Keep the same behavior.",
+    "code_context": "def http_status(code):\n    if code == 200:\n        return 'OK'\n    elif code == 201:\n        return 'Created'\n    elif code == 204:\n        return 'No Content'\n    elif code == 301:\n        return 'Moved Permanently'\n    elif code == 400:\n        return 'Bad Request'\n    elif code == 401:\n        return 'Unauthorized'\n    elif code == 403:\n        return 'Forbidden'\n    elif code == 404:\n        return 'Not Found'\n    elif code == 500:\n        return 'Internal Server Error'\n    elif code == 502:\n        return 'Bad Gateway'\n    else:\n        return 'Unknown'",
+    "test_code": "assert http_status(200) == 'OK'\nassert http_status(404) == 'Not Found'\nassert http_status(500) == 'Internal Server Error'\nassert http_status(999) == 'Unknown'",
+    "timeout": 5,
+    "constraints": "Use match-case (Python 3.10+ syntax)."
+  },
+  {
+    "id": "refac-004",
+    "name": "Monolithic to Modular",
+    "category": "refactoring",
+    "difficulty": "hard",
+    "description": "Break a monolithic function into smaller, focused functions",
+    "instruction": "Refactor this monolithic function into smaller, well-named helper functions. The main function should still work the same way, but the logic should be broken down into clear, focused pieces. Add type hints and a docstring.",
+    "code_context": "def analyze_text(text):\n    words = text.split()\n    word_count = len(words)\n    char_count = len(text)\n    longest = ''\n    for w in words:\n        if len(w) > len(longest):\n            longest = w\n    freqs = {}\n    for w in words:\n        w = w.lower().strip('.,!?;:')\n        if w:\n            freqs[w] = freqs.get(w, 0) + 1\n    most_common = ''\n    max_count = 0\n    for word, count in freqs.items():\n        if count > max_count:\n            most_common = word\n            max_count = count\n    return {'words': word_count, 'chars': char_count, 'longest': longest, 'freq': most_common}",
+    "test_code": "result = analyze_text('Hello world hello')\nassert result['words'] == 3\nassert result['chars'] == 17\nassert result['longest'] == 'world'\nassert result['freq'] == 'hello'",
+    "timeout": 5,
+    "constraints": "Must have at least 3 helper functions."
+  }
+]
