@@ -6,8 +6,19 @@
 |------|--------|
 | 🔍 Pesquisa de referências (SWE-bench real) | ✅ Completo |
 | 📝 Planejamento v2 (F2P/P2P) | ✅ Completo |
-| 🛠️ Implementação | ⏸️ Aguardando aprovação |
-| 🧪 Testes | ⏸️ Aguardando aprovação |
+| 🛠️ Implementação v2 | ✅ Completo |
+| 🧪 Testes e validação | ✅ Completo |
+| 🔧 Melhorias (CLI, relatórios) | ✅ Completo |
+
+## Tasks (44 total)
+
+| Categoria | Arquivo | Quantidade |
+|-----------|---------|------------|
+| generation | `tasks/generation.json` | 5 |
+| bug_fixing | `tasks/bug_fixing.json` | 15 |
+| refactoring | `tasks/refactoring.json` | 5 |
+| sql | `tasks/sql.json` | 14 |
+| data_processing | `tasks/data_processing.json` | 5 |
 
 ## Decisões Tomadas
 
@@ -18,32 +29,22 @@
 | Status de resolução | FULL / PARTIAL / NO / REGRESSION | Idêntico ao SWE-bench |
 | Categorias de falha | syntax, runtime, unresolved, regression, timeout, no_code | Classificação granular |
 | Formato tasks | JSON com arrays de asserts | Fácil editar, sem dep de framework |
-| Tasks de bug_fixing | 15 tasks em arquivo único `bug_fixing.json` | Simplicidade, agrupa por categoria principal |
-| Tasks de refactoring | 5 tasks | Mesma quantidade, formato atualizado |
-| Tasks de generation | 5 tasks, F2P/P2P unificado (arrays idênticos) | Consistência com o resto do benchmark |
 | **Modo saída do modelo** | Código completo (não patch diff) | Mais simples, compatível com todos os modelos |
-| **Hints** | Apenas em tasks difíceis (fix-107, fix-204, refac-103) | Inspirado no SWE-bench, sem poluir tasks fáceis |
+| **Hints** | Apenas em tasks difíceis | Inspirado no SWE-bench |
 | **Runs por task** | 1 run (múltiplas runs futuramente) | Simplicidade na v2 |
-| **Compatibilidade retroativa** | Migrar tudo (sem suporte a test_code antigo) | Mais limpo, 25 tasks só |
-| **Arquivos de tasks** | `bug_fixing.json` único (não separar por subtipo) | Simplicidade |
-| **Contagem de asserts** | Wrapping try/except individual (não stderr parsing) | 100% preciso, suporta asserts duplicados |
-| **Modo geração** | F2P=P2P detectado → sem conceito de regressão | Evita REGRESSION falsa em gen-101 a gen-105 |
-| **Prompt do modelo** | Inclui fail_to_pass + pass_to_pass + hints (se houver) | Modelo sabe exatamente o que implementar |
-| **Ordem de falhas** | no_code > syntax > timeout > runtime > regression > unresolved | Categoria não ambígua |
-| **code_context** | Obrigatório para bug_fixing/refactoring; null para generation | Schema consistente |
-| **Score vs Resolução** | Métricas complementares (ambas no relatório) | Visão completa |
+| **evaluation_mode** | Campo opcional; fallback F2P==P2P | Controle explícito por task |
+| **System prompt** | Por categoria com override opcional | SQL só em tasks SQL |
+| **CLI** | checkpoint, resume, dry-run, consolidate, compare | Local-first (Termux) |
 
 ## Decisões Pendentes
 
-Nenhuma. Todas as 7 decisões foram resolvidas.
+Nenhuma crítica. Futuro (v3): `runs_per_task` estatístico, paralelismo multi-modelo.
 
-## Próximos Marcos
+## Marcos Concluídos
 
 1. ✅ Pesquisa SWE-bench real
 2. ✅ Definição do formato F2P/P2P
-3. ⏸️ **Aprovação do usuário**
-4. ⏸️ Criar tasks JSON (25 tasks)
-5. ⏸️ Reformular evaluator.py
-6. ⏸️ Adaptar bench.py
-7. ⏸️ Adaptar reporter.py
-8. ⏸️ Rodar benchmark completo
+3. ✅ Tasks JSON (44 tasks, 5 categorias)
+4. ✅ evaluator.py v2
+5. ✅ bench.py com CLI completa
+6. ✅ reporter.py (MD, HTML, CSV, compare)

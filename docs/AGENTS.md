@@ -16,8 +16,9 @@ Idealizado por **Leo Lima**, um desenvolvedor que:
 
 - ✅ **Pesquisa de referências:** Concluída (SWE-bench real analisado)
 - ✅ **Planejamento v2 (F2P/P2P):** Concluído (ver `planejamento.md`)
-- ⏸️ **Implementação:** Aguardando aprovação do usuário
-- ⏸️ **Testes:** Aguardando aprovação do usuário
+- ✅ **Implementação v2:** Concluída — 44 tasks em 5 categorias
+- ✅ **CLI unificada:** checkpoint/resume, dry-run, consolidate, compare
+- ✅ **Testes:** `tests/test_evaluator.py` + `validate_tasks.py`
 
 ## Regras Importantes
 
@@ -46,7 +47,8 @@ Idealizado por **Leo Lima**, um desenvolvedor que:
 | **Arquivos** | `bug_fixing.json` único | Simplicidade |
 | **Contagem de asserts** | Wrapping try/except individual (não stderr) | 100% preciso |
 | **Modo geração** | F2P=P2P → sem regressão | Evita falso REGRESSION |
-| **Prompt** | Inclui F2P + P2P + hints | Modelo sabe o que implementar |
+| **Prompt** | Por categoria + override `system_prompt` na task | SQL só em tasks SQL |
+| **evaluation_mode** | Campo opcional (`generation` / `bug_fixing`) | Evita REGRESSION falsa em sql/data_processing |
 | **Ordem falhas** | no_code > syntax > timeout > runtime > regression > unresolved | Sem ambiguidade |
 | **code_context** | Obrigatório para bugs, null para geração | Schema limpo |
 | **Score vs Resolução** | Complementares (ambos no relatório) | Visão completa |

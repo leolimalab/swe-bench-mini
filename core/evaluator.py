@@ -16,11 +16,16 @@ import sys
 import tempfile
 import time
 import re
+from pathlib import Path
+
+from core.thinking import strip_think_tags, THINK_TAG_RE
 
 
 CODE_BLOCK_RE = re.compile(
     r"```(?:python)?\s*\n(.*?)```", re.DOTALL
 )
+
+_EVAL_TMP_DIR = Path(__file__).parent.parent / ".eval_tmp"
 
 
 class Evaluator:
@@ -70,10 +75,14 @@ class Evaluator:
             result["error"] = syntax_error
             return result
 
-        # 3) Detect mode: generation vs bug_fixing
+        # 3) Detect evaluation mode
         f2p_asserts = task.get("fail_to_pass", [])
         p2p_asserts = task.get("pass_to_pass", [])
-        is_generation_mode = (f2p_asserts == p2p_asserts)
+        mode = task.get("evaluation_mode")
+        if mode is None:
+            mode = "generation" if f2p_asserts == p2p_asserts else "bug_fixing"
+        is_generation_mode = mode == "generation"
+        f2p_p2p_identical = f2p_asserts == p2p_asserts
         timeout = task.get("timeout", 5)
 
         # 4) Run F2P tests
@@ -92,11 +101,26 @@ class Evaluator:
         else:
             result["f2p_ratio"] = 1.0
 
-        # 5) Run P2P tests (only in bug_fixing mode)
+        # 5) Run P2P tests
         p2p_passed = 0
         p2p_total = 0
         p2p_error = None
-        if not is_generation_mode and p2p_asserts:
+        if is_generation_mode and f2p_p2p_identical:
+            result["p2p_passed"] = f2p_passed
+            result["p2p_total"] = f2p_total
+            result["p2p_ratio"] = result["f2p_ratio"]
+        elif is_generation_mode and p2p_asserts:
+            p2p_passed, p2p_total, p2p_time, p2p_error = self._run_test_list(
+                p2p_asserts, code, timeout
+            )
+            result["p2p_passed"] = p2p_passed
+            result["p2p_total"] = p2p_total
+            result["exec_time"] = round(max(result["exec_time"], p2p_time), 3)
+            if p2p_total > 0:
+                result["p2p_ratio"] = round(p2p_passed / p2p_total, 4)
+            else:
+                result["p2p_ratio"] = 1.0
+        elif not is_generation_mode and p2p_asserts:
             p2p_passed, p2p_total, p2p_time, p2p_error = self._run_test_list(
                 p2p_asserts, code, timeout
             )
@@ -109,11 +133,10 @@ class Evaluator:
                 result["p2p_ratio"] = round(p2p_passed / p2p_total, 4)
             else:
                 result["p2p_ratio"] = 1.0
-        elif is_generation_mode:
-            # In generation mode, P2P = F2P (identical arrays)
-            result["p2p_passed"] = f2p_passed
-            result["p2p_total"] = f2p_total
-            result["p2p_ratio"] = result["f2p_ratio"]
+        else:
+            result["p2p_passed"] = 0
+            result["p2p_total"] = 0
+            result["p2p_ratio"] = 1.0
 
         # 6) Check for timeout
         if f2p_error == "timeout" or p2p_error == "timeout":
@@ -133,14 +156,18 @@ class Evaluator:
         p2p_all_pass = result["p2p_passed"] == result["p2p_total"]
 
         if is_generation_mode:
-            # Generation: no regression concept
-            if f2p_all_pass:
+            if f2p_all_pass and p2p_all_pass:
                 result["resolution"] = "FULL"
                 result["total_score"] = 100
             else:
                 result["resolution"] = "NO"
                 result["failure_category"] = "unresolved"
-                result["total_score"] = int(result["f2p_ratio"] * 60)
+                if f2p_p2p_identical:
+                    result["total_score"] = int(result["f2p_ratio"] * 60)
+                else:
+                    result["total_score"] = int(
+                        result["f2p_ratio"] * 60 + result["p2p_ratio"] * 40
+                    )
                 result["error"] = "Code does not pass all tests"
         else:
             # Bug fixing mode: full F2P/P2P logic
@@ -173,12 +200,15 @@ class Evaluator:
         """Extract Python code from ```python ... ``` blocks."""
         if not text:
             return None
+        had_think = bool(THINK_TAG_RE.search(text))
+        text = strip_think_tags(text)
         blocks = CODE_BLOCK_RE.findall(text)
         if not blocks:
-            # Try extracting any code-like block (``` without language)
             blocks = re.findall(r"```\s*\n(.*?)```", text, re.DOTALL)
         if not blocks:
             return None
+        if len(blocks) > 1 and had_think:
+            return blocks[-1].strip()
         return "\n".join(b.strip() for b in blocks)
 
     def _check_syntax(self, code):
@@ -225,9 +255,10 @@ except Exception as e:
         # Write to temp file
         tmp_path = None
         try:
+            _EVAL_TMP_DIR.mkdir(exist_ok=True)
             with tempfile.NamedTemporaryFile(
                 mode="w", suffix=".py", delete=False,
-                dir=os.path.expanduser("~")
+                dir=str(_EVAL_TMP_DIR),
             ) as f:
                 f.write(full_code)
                 tmp_path = f.name
@@ -285,7 +316,7 @@ except Exception as e:
                     os.unlink(tmp_path)
                 except Exception:
                     pass
-            return 0, total, time.time() - t0 if 't0' in dir() else 0, str(e)
+            return 0, total, time.time() - t0 if "t0" in locals() else 0, str(e)
 
     def compute_score(self, f2p_ratio, p2p_ratio):
         """Compute composite score from F2P and P2P ratios."""

@@ -1,0 +1,293 @@
+[
+  {
+    "id": "sql-101",
+    "name": "Revenue by Category",
+    "category": "sql",
+    "difficulty": "medium",
+    "description": "GROUP BY + SUM + ORDER BY — agrupar vendas por categoria e calcular receita total no estilo BigQuery",
+    "instruction": "Escreva uma função revenue_by_category(sales) que recebe uma lista de dicionários de vendas (com chaves 'category', 'product', 'revenue') e retorna uma lista de tuplas (category, total_revenue) ordenadas por receita decrescente. Use sqlite3 internamente para executar uma query SQL no estilo BigQuery (GROUP BY + SUM + ORDER BY).",
+    "code_context": null,
+    "fail_to_pass": [
+      "sales = [{'category': 'A', 'product': 'p1', 'revenue': 100}, {'category': 'A', 'product': 'p2', 'revenue': 200}, {'category': 'B', 'product': 'p3', 'revenue': 150}]; result = revenue_by_category(sales); assert result == [('A', 300.0), ('B', 150.0)]",
+      "assert revenue_by_category([{'category': 'X', 'product': 'a', 'revenue': 50}]) == [('X', 50.0)]"
+    ],
+    "pass_to_pass": [
+      "sales = [{'category': 'A', 'product': 'p1', 'revenue': 100}, {'category': 'A', 'product': 'p2', 'revenue': 200}, {'category': 'B', 'product': 'p3', 'revenue': 150}]; result = revenue_by_category(sales); assert result == [('A', 300.0), ('B', 150.0)]",
+      "assert revenue_by_category([]) == []",
+      "sales = [{'category': 'Z', 'product': 'x', 'revenue': 10}, {'category': 'Z', 'product': 'y', 'revenue': 20}]; assert revenue_by_category(sales) == [('Z', 30.0)]"
+    ],
+    "timeout": 10,
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "sql-102",
+    "name": "Top Products per Category",
+    "category": "sql",
+    "difficulty": "hard",
+    "description": "ROW_NUMBER() OVER PARTITION BY — top N produtos por categoria usando window function no estilo BigQuery",
+    "instruction": "Escreva uma função top_per_category(sales_data, n=1) que recebe uma lista de dicionários de vendas (com chaves 'category', 'product', 'revenue') e retorna os top N produtos de cada categoria por receita. Use sqlite3 com a window function ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC) no estilo BigQuery.",
+    "code_context": null,
+    "fail_to_pass": [
+      "sales = [{'category': 'X', 'product': 'A', 'revenue': 100}, {'category': 'X', 'product': 'B', 'revenue': 200}, {'category': 'Y', 'product': 'C', 'revenue': 150}, {'category': 'Y', 'product': 'D', 'revenue': 50}]; result = top_per_category(sales, 1); assert result == [('X', 'B', 200.0), ('Y', 'C', 150.0)]",
+      "sales = [{'category': 'X', 'product': 'A', 'revenue': 100}, {'category': 'X', 'product': 'B', 'revenue': 200}, {'category': 'X', 'product': 'C', 'revenue': 150}]; result = top_per_category(sales, 2); assert len(result) == 2"
+    ],
+    "pass_to_pass": [
+      "sales = [{'category': 'X', 'product': 'A', 'revenue': 100}, {'category': 'X', 'product': 'B', 'revenue': 200}, {'category': 'Y', 'product': 'C', 'revenue': 150}, {'category': 'Y', 'product': 'D', 'revenue': 50}]; result = top_per_category(sales, 1); assert result == [('X', 'B', 200.0), ('Y', 'C', 150.0)]",
+      "assert top_per_category([], 1) == []",
+      "sales = [{'category': 'X', 'product': 'A', 'revenue': 100}]; assert top_per_category(sales, 1) == [('X', 'A', 100.0)]"
+    ],
+    "timeout": 10,
+    "hints": "Use uma subquery com ROW_NUMBER() OVER (PARTITION BY category ORDER BY revenue DESC) e filtre com WHERE rn <= n na query externa.",
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "sql-103",
+    "name": "Running Total of Sales",
+    "category": "sql",
+    "difficulty": "medium",
+    "description": "SUM OVER (ORDER BY) — calcular total acumulado de vendas usando window function no estilo BigQuery",
+    "instruction": "Escreva uma função running_total(sales_data) que recebe uma lista de dicionários de vendas (com chaves 'day', 'amount') e retorna uma lista de tuplas (day, amount, running_total) ordenadas por dia. Use sqlite3 com a window function SUM(amount) OVER (ORDER BY day) no estilo BigQuery.",
+    "code_context": null,
+    "fail_to_pass": [
+      "sales = [{'day': '2024-01-01', 'amount': 100}, {'day': '2024-01-02', 'amount': 50}, {'day': '2024-01-03', 'amount': 75}]; result = running_total(sales); assert result == [('2024-01-01', 100.0, 100.0), ('2024-01-02', 50.0, 150.0), ('2024-01-03', 75.0, 225.0)]",
+      "sales = [{'day': '2024-01-01', 'amount': 200}]; assert running_total(sales) == [('2024-01-01', 200.0, 200.0)]"
+    ],
+    "pass_to_pass": [
+      "sales = [{'day': '2024-01-01', 'amount': 100}, {'day': '2024-01-02', 'amount': 50}, {'day': '2024-01-03', 'amount': 75}]; result = running_total(sales); assert result == [('2024-01-01', 100.0, 100.0), ('2024-01-02', 50.0, 150.0), ('2024-01-03', 75.0, 225.0)]",
+      "assert running_total([]) == []",
+      "sales = [{'day': '2024-01-05', 'amount': 10}, {'day': '2024-01-01', 'amount': 20}]; result = running_total(sales); assert result[0][0] == '2024-01-01'"
+    ],
+    "timeout": 10,
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "sql-104",
+    "name": "Products Above Category Average",
+    "category": "sql",
+    "difficulty": "hard",
+    "description": "AVG OVER PARTITION BY + subquery — produtos acima da média da categoria no estilo BigQuery",
+    "instruction": "Escreva uma função above_avg_per_category(sales_data) que recebe uma lista de dicionários de vendas (com chaves 'category', 'product', 'revenue') e retorna uma lista de tuplas (category, product, revenue) apenas dos produtos cuja receita está ACIMA da média da sua categoria. Use sqlite3 com AVG() OVER (PARTITION BY category) no estilo BigQuery.",
+    "code_context": null,
+    "fail_to_pass": [
+      "sales = [{'category': 'X', 'product': 'A', 'revenue': 100}, {'category': 'X', 'product': 'B', 'revenue': 50}, {'category': 'Y', 'product': 'C', 'revenue': 200}, {'category': 'Y', 'product': 'D', 'revenue': 100}]; result = above_avg_per_category(sales); assert result == [('X', 'A', 100.0), ('Y', 'C', 200.0)]",
+      "sales = [{'category': 'X', 'product': 'A', 'revenue': 10}, {'category': 'X', 'product': 'B', 'revenue': 20}]; assert above_avg_per_category(sales) == [('X', 'B', 20.0)]"
+    ],
+    "pass_to_pass": [
+      "sales = [{'category': 'X', 'product': 'A', 'revenue': 100}, {'category': 'X', 'product': 'B', 'revenue': 50}, {'category': 'Y', 'product': 'C', 'revenue': 200}, {'category': 'Y', 'product': 'D', 'revenue': 100}]; result = above_avg_per_category(sales); assert result == [('X', 'A', 100.0), ('Y', 'C', 200.0)]",
+      "assert above_avg_per_category([]) == []",
+      "sales = [{'category': 'Z', 'product': 'A', 'revenue': 100}, {'category': 'Z', 'product': 'B', 'revenue': 100}]; assert above_avg_per_category(sales) == []"
+    ],
+    "timeout": 10,
+    "hints": "Use uma subquery que calcula AVG(revenue) OVER (PARTITION BY category) e filtre na query externa com WHERE revenue > cat_avg.",
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "sql-105",
+    "name": "User Session Analytics",
+    "category": "sql",
+    "difficulty": "hard",
+    "description": "GROUP BY + COUNT + MIN/MAX + julianday — analytics de sessões de usuários no estilo BigQuery",
+    "instruction": "Escreva uma função session_stats(events) que recebe uma lista de dicionários de eventos (com chaves 'user_id', 'event_time' no formato ISO, 'action') e retorna uma lista de tuplas (user_id, total_events, first_event, last_event, duration_minutes) ordenadas por total_events decrescente. Use sqlite3 com GROUP BY, COUNT, MIN, MAX e julianday() para calcular a duração da sessão em minutos. No estilo BigQuery: COUNT(*) + GROUP BY + funções de data/hora.",
+    "code_context": null,
+    "fail_to_pass": [
+      "events = [{'user_id': 'u1', 'event_time': '2024-01-01 10:00:00', 'action': 'login'}, {'user_id': 'u1', 'event_time': '2024-01-01 10:30:00', 'action': 'purchase'}, {'user_id': 'u1', 'event_time': '2024-01-01 11:00:00', 'action': 'logout'}, {'user_id': 'u2', 'event_time': '2024-01-01 09:00:00', 'action': 'login'}, {'user_id': 'u2', 'event_time': '2024-01-01 09:15:00', 'action': 'logout'}]; result = session_stats(events); assert len(result) == 2; assert result[0][0] == 'u1'; assert result[0][1] == 3",
+      "assert session_stats([{'user_id': 'u1', 'event_time': '2024-01-01 00:00:00', 'action': 'x'}])[0][1] == 1"
+    ],
+    "pass_to_pass": [
+      "events = [{'user_id': 'u1', 'event_time': '2024-01-01 10:00:00', 'action': 'login'}, {'user_id': 'u1', 'event_time': '2024-01-01 10:30:00', 'action': 'purchase'}, {'user_id': 'u1', 'event_time': '2024-01-01 11:00:00', 'action': 'logout'}, {'user_id': 'u2', 'event_time': '2024-01-01 09:00:00', 'action': 'login'}, {'user_id': 'u2', 'event_time': '2024-01-01 09:15:00', 'action': 'logout'}]; result = session_stats(events); assert len(result) == 2; assert result[0][0] == 'u1'; assert result[0][1] == 3",
+      "assert session_stats([]) == []",
+      "r = session_stats([{'user_id': 'a', 'event_time': '2024-06-01 12:00:00', 'action': 'start'}]); assert len(r) == 1; assert r[0][4] == 0.0"
+    ],
+    "timeout": 10,
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "sql-106",
+    "name": "Day-over-Day Revenue Change",
+    "category": "sql",
+    "difficulty": "hard",
+    "description": "LAG() — calcular diferença de receita dia-a-dia usando window function LAG no estilo BigQuery",
+    "instruction": "Escreva uma função daily_change(sales_data) que recebe uma lista de dicionários de vendas (com chaves 'date', 'total_revenue') e retorna uma lista de tuplas (date, revenue, prev_revenue, change, pct_change) ordenadas por data. Use sqlite3 com a window function LAG(total_revenue) OVER (ORDER BY date) para obter a receita do dia anterior. change = revenue - prev_revenue (ou 0 para o primeiro dia), pct_change = (change / prev_revenue * 100) quando prev_revenue > 0, senão 0. No estilo BigQuery: LAG() + window functions.",
+    "code_context": null,
+    "fail_to_pass": [
+      "sales = [{'date': '2024-01-01', 'total_revenue': 1000}, {'date': '2024-01-02', 'total_revenue': 1200}, {'date': '2024-01-03', 'total_revenue': 900}]; result = daily_change(sales); assert len(result) == 3; assert result[0] == ('2024-01-01', 1000.0, 0.0, 0.0, 0.0); assert result[1][4] == 20.0; assert result[2][4] == -25.0",
+      "sales = [{'date': '2024-01-01', 'total_revenue': 500}]; assert daily_change(sales) == [('2024-01-01', 500.0, 0.0, 0.0, 0.0)]"
+    ],
+    "pass_to_pass": [
+      "sales = [{'date': '2024-01-01', 'total_revenue': 1000}, {'date': '2024-01-02', 'total_revenue': 1200}]; result = daily_change(sales); assert len(result) == 2; assert result[0][0] == '2024-01-01'",
+      "assert daily_change([]) == []",
+      "sales = [{'date': '2024-01-01', 'total_revenue': 100}]; r = daily_change(sales); assert r[0][3] == 0.0"
+    ],
+    "timeout": 10,
+    "hints": "Use SELECT date, total_revenue, COALESCE(LAG(total_revenue) OVER (ORDER BY date), 0) as prev_revenue FROM temp; Depois calcule change e pct_change no Python.",
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "sql-107",
+    "name": "Categories with Top Products",
+    "category": "sql",
+    "difficulty": "hard",
+    "description": "RANK() + HAVING — categorias que têm mais de N produtos no topo usando RANK() no estilo BigQuery",
+    "instruction": "Escreva uma função top_categories(sales_data, min_products=2) que recebe uma lista de dicionários de vendas (com chaves 'category', 'product', 'revenue') e retorna uma lista de categorias que têm pelo menos min_products produtos no top 3 por receita. Use sqlite3 com RANK() OVER (PARTITION BY category ORDER BY revenue DESC) para ranquear produtos dentro de cada categoria, filtre WHERE rank <= 3, e depois use GROUP BY + HAVING COUNT(*) >= min_products. No estilo BigQuery: RANK() + PARTITION BY + HAVING.",
+    "code_context": null,
+    "fail_to_pass": [
+      "sales = [{'category': 'X', 'product': 'A', 'revenue': 100}, {'category': 'X', 'product': 'B', 'revenue': 90}, {'category': 'X', 'product': 'C', 'revenue': 80}, {'category': 'X', 'product': 'D', 'revenue': 10}, {'category': 'Y', 'product': 'E', 'revenue': 50}, {'category': 'Y', 'product': 'F', 'revenue': 40}]; result = top_categories(sales, 2); assert 'X' in result; assert 'Y' not in result",
+      "sales = [{'category': 'Z', 'product': 'P', 'revenue': 100}]; assert top_categories(sales, 2) == []"
+    ],
+    "pass_to_pass": [
+      "sales = [{'category': 'X', 'product': 'A', 'revenue': 100}, {'category': 'X', 'product': 'B', 'revenue': 90}, {'category': 'X', 'product': 'C', 'revenue': 80}, {'category': 'X', 'product': 'D', 'revenue': 10}, {'category': 'Y', 'product': 'E', 'revenue': 50}, {'category': 'Y', 'product': 'F', 'revenue': 40}]; result = top_categories(sales, 2); assert 'X' in result",
+      "assert top_categories([], 2) == []",
+      "sales = [{'category': 'X', 'product': 'A', 'revenue': 100}, {'category': 'X', 'product': 'B', 'revenue': 90}]; result = top_categories(sales, 3); assert result == []"
+    ],
+    "timeout": 10,
+    "hints": "Use uma subquery com RANK() OVER (PARTITION BY category ORDER BY revenue DESC), filtre WHERE rank <= 3, depois GROUP BY category HAVING COUNT(*) >= min_products.",
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "sql-108",
+    "name": "Revenue by Price Range",
+    "category": "sql",
+    "difficulty": "medium",
+    "description": "CASE WHEN + GROUP BY — agrupar vendas em faixas de preço usando CASE WHEN no estilo BigQuery",
+    "instruction": "Escreva uma função price_range_revenue(sales) que recebe uma lista de dicionários de vendas (com chaves 'product', 'price', 'quantity') e retorna uma lista de tuplas (price_range, total_revenue) ordenadas por faixa. Use sqlite3 com CASE WHEN para criar faixas: 'budget' (price < 50), 'mid' (50 <= price < 200), 'premium' (200 <= price < 500), 'luxury' (price >= 500). Depois GROUP BY price_range com SUM(price * quantity). No estilo BigQuery: CASE WHEN + GROUP BY.",
+    "code_context": null,
+    "fail_to_pass": [
+      "sales = [{'product': 'A', 'price': 30, 'quantity': 2}, {'product': 'B', 'price': 100, 'quantity': 1}, {'product': 'C', 'price': 300, 'quantity': 3}, {'product': 'D', 'price': 1000, 'quantity': 1}]; result = price_range_revenue(sales); assert dict(result) == {'budget': 60.0, 'mid': 100.0, 'premium': 900.0, 'luxury': 1000.0}",
+      "sales = [{'product': 'X', 'price': 25, 'quantity': 4}]; assert price_range_revenue(sales) == [('budget', 100.0)]"
+    ],
+    "pass_to_pass": [
+      "sales = [{'product': 'A', 'price': 30, 'quantity': 2}, {'product': 'B', 'price': 100, 'quantity': 1}]; result = price_range_revenue(sales); assert len(result) == 2",
+      "assert price_range_revenue([]) == []",
+      "sales = [{'product': 'X', 'price': 50, 'quantity': 1}]; assert price_range_revenue(sales) == [('mid', 50.0)]"
+    ],
+    "timeout": 10,
+    "hints": "Use CASE WHEN price < 50 THEN 'budget' WHEN price < 200 THEN 'mid' WHEN price < 500 THEN 'premium' ELSE 'luxury' END como coluna de agrupamento.",
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "sql-109",
+    "name": "Consolidated Sales Report",
+    "category": "sql",
+    "difficulty": "hard",
+    "description": "UNION ALL + subqueries — consolidar vendas de múltiplas lojas/regiões no estilo BigQuery",
+    "instruction": "Escreva uma função consolidated_report(stores) que recebe uma lista de dicionários, onde cada dicionário tem chave 'store_name' e valor que é uma lista de dicionários de vendas (com chaves 'product', 'amount'). A função deve consolidar todas as vendas e retornar uma lista de tuplas (store_name, product, total_amount) ordenadas por store_name e depois por total_amount decrescente. Use sqlite3 com UNION ALL para combinar as tabelas de cada loja, depois GROUP BY store_name, product com SUM(amount). No estilo BigQuery: UNION ALL + subqueries + GROUP BY.",
+    "code_context": null,
+    "fail_to_pass": [
+      "stores = [{'store_name': 'Loja A', 'sales': [{'product': 'X', 'amount': 100}, {'product': 'Y', 'amount': 200}]}, {'store_name': 'Loja B', 'sales': [{'product': 'X', 'amount': 50}, {'product': 'Z', 'amount': 300}]}]; result = consolidated_report(stores); assert len(result) == 4; assert ('Loja B', 'Z', 300.0) in result; assert ('Loja A', 'Y', 200.0) in result",
+      "stores = [{'store_name': 'X', 'sales': [{'product': 'A', 'amount': 10}]}]; assert consolidated_report(stores) == [('X', 'A', 10.0)]"
+    ],
+    "pass_to_pass": [
+      "stores = [{'store_name': 'A', 'sales': [{'product': 'X', 'amount': 100}]}, {'store_name': 'B', 'sales': [{'product': 'X', 'amount': 50}]}]; result = consolidated_report(stores); assert len(result) == 2",
+      "assert consolidated_report([]) == []",
+      "stores = [{'store_name': 'X', 'sales': []}]; assert consolidated_report(stores) == []"
+    ],
+    "timeout": 10,
+    "hints": "Use UNION ALL para combinar as vendas de cada loja. Crie uma CTE ou subquery que adiciona a coluna 'store_name' a cada conjunto de vendas antes do UNION ALL.",
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "sql-110",
+    "name": "Category Hierarchy (Recursive CTE)",
+    "category": "sql",
+    "difficulty": "hard",
+    "description": "Recursive CTE — navegar hierarquia de categorias (pai-filho) usando WITH RECURSIVE no estilo BigQuery",
+    "instruction": "Escreva uma função category_hierarchy(categories, root_id=None) que recebe uma lista de dicionários de categorias (com chaves 'id', 'name', 'parent_id' onde parent_id é None para raízes) e retorna uma lista de tuplas (id, name, level, path) ordenadas por level, depois name. Use sqlite3 com WITH RECURSIVE para navegar a hierarquia. level começa em 0 para raízes. path é uma string como 'Root > Child > Grandchild'. Se root_id for especificado, começa daquela categoria. No estilo BigQuery: WITH RECURSIVE + CTE hierárquica.",
+    "code_context": null,
+    "fail_to_pass": [
+      "cats = [{'id': 1, 'name': 'Eletrônicos', 'parent_id': None}, {'id': 2, 'name': 'Computadores', 'parent_id': 1}, {'id': 3, 'name': 'Laptops', 'parent_id': 2}, {'id': 4, 'name': 'Livros', 'parent_id': None}]; result = category_hierarchy(cats); assert len(result) == 4; assert ('Eletrônicos', 0, 'Eletrônicos') in [(r[1], r[2], r[3]) for r in result]; assert ('Laptops', 2, 'Eletrônicos > Computadores > Laptops') in [(r[1], r[2], r[3]) for r in result]",
+      "cats = [{'id': 1, 'name': 'Root', 'parent_id': None}, {'id': 2, 'name': 'Child', 'parent_id': 1}]; result = category_hierarchy(cats, 1); assert len(result) == 2; assert result[0][1] == 'Root'"
+    ],
+    "pass_to_pass": [
+      "cats = [{'id': 1, 'name': 'Root', 'parent_id': None}, {'id': 2, 'name': 'Child', 'parent_id': 1}]; result = category_hierarchy(cats); assert len(result) == 2",
+      "assert category_hierarchy([]) == []",
+      "cats = [{'id': 1, 'name': 'Solo', 'parent_id': None}]; result = category_hierarchy(cats); assert len(result) == 1; assert result[0][2] == 0"
+    ],
+    "timeout": 10,
+    "hints": "Use WITH RECURSIVE cte AS (SELECT id, name, parent_id, 0 as level, name as path FROM categories WHERE parent_id IS NULL UNION ALL SELECT c.id, c.name, c.parent_id, p.level + 1, p.path || ' > ' || c.name FROM categories c JOIN cte p ON c.parent_id = p.id).",
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "sql-111",
+    "name": "Flatten User Tags (UNNEST)",
+    "category": "sql",
+    "difficulty": "medium",
+    "description": "UNNEST — desaninhar array de tags de usuários simulando UNNEST do BigQuery com json_each do sqlite3",
+    "instruction": "Escreva uma função flatten_tags(users) que recebe uma lista de dicionários de usuários (com chaves 'user_id', 'name', 'tags' onde tags é uma string JSON de array tipo '[\"tag1\",\"tag2\"]') e retorna uma lista de tuplas (user_id, name, tag) — um registro por tag, no estilo BigQuery UNNEST. Use sqlite3 internamente com json_each() para desaninhar o array JSON de tags.",
+    "code_context": null,
+    "fail_to_pass": [
+      "users = [{'user_id': 1, 'name': 'Ana', 'tags': '[\"python\",\"sql\",\"bigquery\"]'}, {'user_id': 2, 'name': 'Bob', 'tags': '[\"java\"]'}]; result = flatten_tags(users); assert len(result) == 4; assert (1, 'Ana', 'python') in result; assert (1, 'Ana', 'bigquery') in result; assert (2, 'Bob', 'java') in result",
+      "users = [{'user_id': 1, 'name': 'X', 'tags': '[]'}]; assert flatten_tags(users) == []"
+    ],
+    "pass_to_pass": [
+      "users = [{'user_id': 1, 'name': 'Ana', 'tags': '[\"python\",\"sql\"]'}]; result = flatten_tags(users); assert len(result) == 2",
+      "assert flatten_tags([]) == []",
+      "users = [{'user_id': 1, 'name': 'A', 'tags': '[\"x\"]'}, {'user_id': 2, 'name': 'B', 'tags': '[\"y\"]'}]; result = flatten_tags(users); assert len(result) == 2"
+    ],
+    "timeout": 10,
+    "hints": "Use json_each(tags) para desaninhar o array. No sqlite3: SELECT user_id, name, value FROM temp CROSS JOIN json_each(tags).",
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "sql-112",
+    "name": "Order Items with Index (UNNEST+OFFSET)",
+    "category": "sql",
+    "difficulty": "medium",
+    "description": "UNNEST WITH OFFSET — desaninhar itens de pedido preservando índice, como UNNEST(array) WITH OFFSET no BigQuery",
+    "instruction": "Escreva uma função order_items_with_index(orders) que recebe uma lista de dicionários de pedidos (com chaves 'order_id', 'customer', 'items' onde items é string JSON de array tipo '[{\"prod\":\"A\",\"qty\":2},{\"prod\":\"B\",\"qty\":1}]') e retorna uma lista de tuplas (order_id, customer, item_index, product, quantity) ordenadas por order_id e depois item_index. Use sqlite3 com json_each() e extraia o índice com json_each.key (que retorna a posição no array). Equivalente a UNNEST(array) WITH OFFSET no BigQuery.",
+    "code_context": null,
+    "fail_to_pass": [
+      "orders = [{'order_id': 1, 'customer': 'Ana', 'items': '[{\"prod\":\"A\",\"qty\":2},{\"prod\":\"B\",\"qty\":1}]'}]; result = order_items_with_index(orders); assert len(result) == 2; assert result[0] == (1, 'Ana', 0, 'A', 2); assert result[1] == (1, 'Ana', 1, 'B', 1)",
+      "orders = [{'order_id': 1, 'customer': 'X', 'items': '[]'}]; assert order_items_with_index(orders) == []"
+    ],
+    "pass_to_pass": [
+      "orders = [{'order_id': 1, 'customer': 'A', 'items': '[{\"prod\":\"X\",\"qty\":1}]'}]; result = order_items_with_index(orders); assert result[0][2] == 0",
+      "assert order_items_with_index([]) == []",
+      "orders = [{'order_id': 1, 'customer': 'A', 'items': '[{\"prod\":\"X\",\"qty\":1},{\"prod\":\"Y\",\"qty\":2}]'}]; result = order_items_with_index(orders); assert len(result) == 2"
+    ],
+    "timeout": 10,
+    "hints": "Use json_each(items) com CROSS JOIN. O índice do array é acessível via json_each.key. Extraia os campos do JSON aninhado com json_extract(value, '$.prod') e json_extract(value, '$.qty').",
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "sql-113",
+    "name": "Active Users per Day (UNNEST Date Range)",
+    "category": "sql",
+    "difficulty": "hard",
+    "description": "UNNEST + GENERATE_DATE_ARRAY — expandir intervalo de datas por usuário, simulando GENERATE_DATE_ARRAY do BigQuery com recursão",
+    "instruction": "Escreva uma função active_days(subscriptions) que recebe uma lista de dicionários de assinaturas (com chaves 'user_id', 'start_date', 'end_date' em formato ISO 'YYYY-MM-DD') e retorna uma lista de tuplas (user_id, active_date) — um registro para cada dia em que o usuário esteve ativo, ordenado por data. Use sqlite3 com WITH RECURSIVE para gerar uma série de datas entre start_date e end_date (inclusive). Equivalente a CROSS JOIN UNNEST(GENERATE_DATE_ARRAY(start_date, end_date)) no BigQuery.",
+    "code_context": null,
+    "fail_to_pass": [
+      "subs = [{'user_id': 1, 'start_date': '2024-01-01', 'end_date': '2024-01-03'}]; result = active_days(subs); assert len(result) == 3; assert (1, '2024-01-01') in result; assert (1, '2024-01-02') in result; assert (1, '2024-01-03') in result",
+      "subs = [{'user_id': 1, 'start_date': '2024-01-01', 'end_date': '2024-01-01'}]; assert len(active_days(subs)) == 1"
+    ],
+    "pass_to_pass": [
+      "subs = [{'user_id': 1, 'start_date': '2024-01-01', 'end_date': '2024-01-02'}, {'user_id': 2, 'start_date': '2024-01-03', 'end_date': '2024-01-03'}]; result = active_days(subs); assert len(result) == 3",
+      "assert active_days([]) == []",
+      "subs = [{'user_id': 1, 'start_date': '2024-01-01', 'end_date': '2024-01-05'}]; result = active_days(subs); assert len(result) == 5"
+    ],
+    "timeout": 10,
+    "hints": "Use WITH RECURSIVE dates AS (SELECT user_id, start_date AS dt FROM temp UNION ALL SELECT user_id, date(dt, '+1 day') FROM dates WHERE dt < (SELECT end_date FROM temp WHERE user_id = dates.user_id)). Depois SELECT user_id, dt FROM dates ORDER BY dt.",
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "sql-114",
+    "name": "Product Sales by Tag (UNNEST + Aggregation)",
+    "category": "sql",
+    "difficulty": "hard",
+    "description": "UNNEST + GROUP BY — desaninhar tags de produtos e agregar vendas por tag, como UNNEST + GROUP BY no BigQuery",
+    "instruction": "Escreva uma função sales_by_tag(products) que recebe uma lista de dicionários de produtos vendidos (com chaves 'product', 'tags' como string JSON de array, 'revenue') e retorna uma lista de tuplas (tag, total_revenue, num_products) ordenadas por total_revenue decrescente. Use sqlite3 com json_each() para desaninhar as tags de cada produto e depois GROUP BY tag. Equivalente a: SELECT tag, SUM(revenue), COUNT(*) FROM tabela CROSS JOIN UNNEST(products.tags) AS tag GROUP BY tag ORDER BY total DESC no BigQuery.",
+    "code_context": null,
+    "fail_to_pass": [
+      "products = [{'product': 'A', 'tags': '[\"eletrônicos\",\"promoção\"]', 'revenue': 100}, {'product': 'B', 'tags': '[\"eletrônicos\"]', 'revenue': 200}, {'product': 'C', 'tags': '[\"promoção\",\"limpeza\"]', 'revenue': 50}]; result = sales_by_tag(products); assert dict((r[0], r[1]) for r in result) == {'eletrônicos': 300.0, 'promoção': 150.0, 'limpeza': 50.0}",
+      "products = [{'product': 'X', 'tags': '[\"tag1\"]', 'revenue': 100}]; assert sales_by_tag(products) == [('tag1', 100.0, 1)]"
+    ],
+    "pass_to_pass": [
+      "products = [{'product': 'A', 'tags': '[\"a\"]', 'revenue': 10}, {'product': 'B', 'tags': '[\"a\",\"b\"]', 'revenue': 20}]; result = sales_by_tag(products); assert len(result) == 2",
+      "assert sales_by_tag([]) == []",
+      "products = [{'product': 'X', 'tags': '[]', 'revenue': 100}]; assert sales_by_tag(products) == []"
+    ],
+    "timeout": 10,
+    "hints": "Use CROSS JOIN json_each(tags) para desaninhar, depois GROUP BY value (a tag) com SUM(revenue) e COUNT(*).",
+    "evaluation_mode": "generation"
+  }
+]

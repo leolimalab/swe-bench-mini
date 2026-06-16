@@ -1,0 +1,112 @@
+[
+  {
+    "id": "dp-101",
+    "name": "JSON Flattener",
+    "category": "data_processing",
+    "difficulty": "medium",
+    "description": "Achatar dicts aninhados — converter estrutura JSON hierárquica em flat key-value com chaves concatenadas por underscore",
+    "instruction": "Escreva uma função flatten_json(data, prefix='') que recebe um dicionário aninhado (pode conter dicts, listas, valores escalares) e retorna um dicionário flat onde chaves aninhadas são concatenadas com underscore. Para listas, use índices numéricos. Exemplo: {'a': {'b': 1, 'c': [{'d': 2}, {'d': 3}]}} → {'a_b': 1, 'a_c_0_d': 2, 'a_c_1_d': 3}. Trate valores None como null — não os inclua no resultado. Suporta até 5 níveis de profundidade.",
+    "code_context": null,
+    "fail_to_pass": [
+      "data = {'a': {'b': 1, 'c': 2}, 'd': 3}; assert flatten_json(data) == {'a_b': 1, 'a_c': 2, 'd': 3}",
+      "data = {'a': {'b': [{'c': 10}, {'c': 20}]}}; result = flatten_json(data); assert result == {'a_b_0_c': 10, 'a_b_1_c': 20}"
+    ],
+    "pass_to_pass": [
+      "data = {'a': {'b': 1, 'c': 2}, 'd': 3}; assert flatten_json(data) == {'a_b': 1, 'a_c': 2, 'd': 3}",
+      "assert flatten_json({}) == {}",
+      "assert flatten_json({'a': 1}) == {'a': 1}",
+      "data = {'a': {'b': None}}; result = flatten_json(data); assert 'a_b' not in result"
+    ],
+    "timeout": 5,
+    "hints": "Use recursão. Se o valor for dict, chame flatten_json recursivamente com prefix + '_' + key. Se for lista, itere com enumerate e chame recursivamente com prefix + '_' + str(i). Se for None, pule. Senão, adicione ao resultado.",
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "dp-102",
+    "name": "Log Parser with Regex",
+    "category": "data_processing",
+    "difficulty": "hard",
+    "description": "Extrair dados estruturados de logs de servidor usando regex — IP, timestamp, método HTTP, status, tamanho",
+    "instruction": "Escreva uma função parse_logs(log_lines) que recebe uma lista de strings de log no formato Apache/Nginx (ex: '192.168.1.1 - - [01/Jan/2024:12:00:00 +0000] \"GET /api/users HTTP/1.1\" 200 1234') e retorna uma lista de dicionários com chaves 'ip', 'timestamp', 'method', 'path', 'status', 'size'. O timestamp deve ser convertido para ISO format 'YYYY-MM-DD HH:MM:SS'. O size pode ser '-' (traduzir para None). Status é int. Retorne apenas entradas com status >= 400 (erros do servidor).",
+    "code_context": null,
+    "fail_to_pass": [
+      "logs = ['192.168.1.1 - - [01/Jan/2024:12:00:00 +0000] \"GET /api/users HTTP/1.1\" 200 1234', '10.0.0.1 - - [15/Mar/2024:08:30:15 +0000] \"POST /api/login HTTP/1.1\" 500 0']; result = parse_logs(logs); assert len(result) == 1; assert result[0]['status'] == 500; assert result[0]['method'] == 'POST'",
+      "logs = ['10.0.0.1 - - [15/Mar/2024:08:30:15 +0000] \"DELETE /api/admin HTTP/1.1\" 403 50']; result = parse_logs(logs); assert len(result) == 1; assert result[0]['ip'] == '10.0.0.1'"
+    ],
+    "pass_to_pass": [
+      "logs = ['192.168.1.1 - - [01/Jan/2024:12:00:00 +0000] \"GET /api/users HTTP/1.1\" 200 1234']; assert parse_logs(logs) == []",
+      "assert parse_logs([]) == []",
+      "logs = ['10.0.0.1 - - [15/Mar/2024:08:30:15 +0000] \"POST /api/login HTTP/1.1\" 500 0']; result = parse_logs(logs); assert result[0]['timestamp'] == '2024-03-15 08:30:15'; assert result[0]['size'] == 0"
+    ],
+    "timeout": 5,
+    "hints": "Use a regex: r'(\\d+\\.\\d+\\.\\d+\\.\\d+) - - \\[([^\\]]+)\\] \"(\\w+) ([^ ]+) HTTP/[^\"]+\" (\\d+) (\\S+)'. Para converter o timestamp '01/Jan/2024:12:00:00 +0000', use datetime.strptime(dt_str, '%d/%b/%Y:%H:%M:%S %z').",
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "dp-103",
+    "name": "Interval Merger",
+    "category": "data_processing",
+    "difficulty": "medium",
+    "description": "Mesclar intervalos sobrepostos — dado uma lista de intervalos (início, fim), mesclar os que se sobrepõem ou são adjacentes",
+    "instruction": "Escreva uma função merge_intervals(intervals) que recebe uma lista de tuplas (start, end) representando intervalos (ints) e retorna uma lista de intervalos mesclados. Dois intervalos são mescláveis se um começa antes ou no mesmo ponto que o outro termina (adjacentes também mesclam). Exemplo: [(1, 3), (2, 6), (8, 10), (15, 18)] → [(1, 6), (8, 10), (15, 18)]. [(1, 4), (4, 5)] → [(1, 5)] (adjacentes). A entrada não está necessariamente ordenada.",
+    "code_context": null,
+    "fail_to_pass": [
+      "assert merge_intervals([(1, 3), (2, 6), (8, 10), (15, 18)]) == [(1, 6), (8, 10), (15, 18)]",
+      "assert merge_intervals([(1, 4), (4, 5)]) == [(1, 5)]"
+    ],
+    "pass_to_pass": [
+      "assert merge_intervals([(1, 3), (2, 6), (8, 10), (15, 18)]) == [(1, 6), (8, 10), (15, 18)]",
+      "assert merge_intervals([]) == []",
+      "assert merge_intervals([(5, 10)]) == [(5, 10)]",
+      "assert merge_intervals([(10, 20), (1, 5)]) == [(1, 5), (10, 20)]"
+    ],
+    "timeout": 5,
+    "hints": "Ordene por start. Itere: se o intervalo atual sobrepõe ou é adjacente ao último no resultado (current.start <= last.end + 1), mescle (last.end = max(last.end, current.end)). Senão, adicione como novo.",
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "dp-104",
+    "name": "Multi-Criteria Sorter",
+    "category": "data_processing",
+    "difficulty": "hard",
+    "description": "Ordenação por múltiplos critérios — ordenar lista de dicionários por várias chaves com direções diferentes (asc/desc) e tratamento de None",
+    "instruction": "Escreva uma função multi_sort(data, criteria) que recebe uma lista de dicionários e uma lista de critérios no formato [{'key': 'name', 'asc': True}, {'key': 'age', 'asc': False}]. A função deve ordenar a lista aplicando os critérios em ordem de precedência. Valores None devem ser tratados como: se asc=True, None vem primeiro (menor que tudo); se asc=False, None vem último. A ordenação deve ser estável e case-insensitive para strings. Não modifique a lista original.",
+    "code_context": null,
+    "fail_to_pass": [
+      "data = [{'name': 'Alice', 'age': 30}, {'name': 'Bob', 'age': 25}, {'name': 'alice', 'age': 20}]; crit = [{'key': 'name', 'asc': True}, {'key': 'age', 'asc': False}]; result = multi_sort(data, crit); assert result[0]['name'] == 'Alice'; assert result[0]['age'] == 30; assert result[2]['name'] == 'Bob'",
+      "data = [{'x': None}, {'x': 5}, {'x': 1}]; crit = [{'key': 'x', 'asc': True}]; result = multi_sort(data, crit); assert result[0]['x'] is None; assert result[-1]['x'] == 5"
+    ],
+    "pass_to_pass": [
+      "data = [{'name': 'Alice', 'age': 30}, {'name': 'Bob', 'age': 25}]; crit = [{'key': 'name', 'asc': True}]; result = multi_sort(data, crit); assert result[0]['name'] == 'Alice'",
+      "assert multi_sort([], [{'key': 'x', 'asc': True}]) == []",
+      "data = [{'a': 2}, {'a': 1}]; crit = [{'key': 'a', 'asc': True}]; result = multi_sort(data, crit); assert result[0]['a'] == 1; assert result[1]['a'] == 2",
+      "data = [{'a': 1}, {'b': 2}]; crit = [{'key': 'a', 'asc': True}]; result = multi_sort(data, crit); assert len(result) == 2"
+    ],
+    "timeout": 5,
+    "hints": "Use functools.cmp_to_key com uma função de comparação que itera os critérios. Para cada critério, compare os valores: se ambos None → 0; se um é None → -1 (asc) ou 1 (desc); se string → lower(). Aplique reverse=True se asc=False. Alternativa: Python 3.x sorted() com tuple key.",
+    "evaluation_mode": "generation"
+  },
+  {
+    "id": "dp-105",
+    "name": "Deep Dictionary Merger",
+    "category": "data_processing",
+    "difficulty": "hard",
+    "description": "Merge recursivo de dicionários — combinar dois dicts aninhados com estratégias configuráveis para conflitos (sobrescrever, manter, somar, concatenar listas)",
+    "instruction": "Escreva uma função deep_merge(base, override, strategy='override') que faz merge recursivo de dois dicionários. Suporta 3 estratégias: 'override' (padrão — override sobrescreve base), 'keep' (base mantém, override ignora), 'sum' (valores numéricos são somados). O merge deve ser recursivo para dicts aninhados. Listas em ambos os lados no mesmo caminho são concatenadas (independente da estratégia). Dicts em um lado e escalar no outro: o escalar vence (override ou keep conforme estratégia). Não modifique os dicts originais.",
+    "code_context": null,
+    "fail_to_pass": [
+      "a = {'x': 1, 'y': {'a': 10, 'b': 20}}; b = {'y': {'b': 99, 'c': 30}, 'z': 5}; result = deep_merge(a, b); assert result == {'x': 1, 'y': {'a': 10, 'b': 99, 'c': 30}, 'z': 5}",
+      "a = {'x': 1, 'y': 10}; b = {'x': 2, 'y': 20}; assert deep_merge(a, b, 'sum') == {'x': 3, 'y': 30}"
+    ],
+    "pass_to_pass": [
+      "a = {'x': 1, 'y': {'a': 10, 'b': 20}}; b = {'y': {'b': 99, 'c': 30}, 'z': 5}; result = deep_merge(a, b); assert result == {'x': 1, 'y': {'a': 10, 'b': 99, 'c': 30}, 'z': 5}",
+      "assert deep_merge({}, {'a': 1}) == {'a': 1}",
+      "a = {'a': 1}; assert deep_merge(a, {}) == {'a': 1}",
+      "a = {'list': [1, 2]}; b = {'list': [3, 4]}; assert deep_merge(a, b) == {'list': [1, 2, 3, 4]}",
+      "a = {'x': 1}; b = {'x': 2}; assert deep_merge(a, b, 'keep') == {'x': 1}"
+    ],
+    "timeout": 5,
+    "hints": "Faça uma cópia profunda de base primeiro (copy.deepcopy). Itere sobre override: se key não existe em base → adiciona. Se ambos são dict → recursão. Se ambos são list → concatena. Se ambos são números e strategy='sum' → soma. Senão → aplica estratégia (override substitui, keep mantém).",
+    "evaluation_mode": "generation"
+  }
+]

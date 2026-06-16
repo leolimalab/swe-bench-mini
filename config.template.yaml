@@ -20,7 +20,7 @@ models:
     description: "Qwen 3.5 via llama.cpp"
 
 benchmark:
-  tasks: ["generation", "bug_fixing", "refactoring"]
+  tasks: ["generation", "bug_fixing", "refactoring", "sql", "data_processing"]
   runs_per_task: 1
   max_tokens: 2048
   temperature: 0.2
